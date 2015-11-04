@@ -9,8 +9,12 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  printf("Enter buffer size: ");
-  scanf("%d", &buffSize);
+  if ('\0' != argv[3]) {
+    buffSize = (int) argv[3];
+  }else{
+    printf("Enter buffer size: ");
+    scanf("%d", &buffSize);
+  }
 
   if (!initFiles(argv[1], argv[2])) {
     return 0;
