@@ -9,29 +9,28 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  if ('\0' != argv[3]) {
-    buffSize = (int) argv[3];
-  }else{
-    printf("Enter buffer size: ");
-    scanf("%d", &buffSize);
-  }
+  printf("Enter buffer size: ");
+  scanf("%d", &buffSize);
 
-  if (!initFiles(argv[1], argv[2])) {
+  if (!init(argv[1], argv[2])) {
     return 0;
   }
 
-  while (readFile()) {
-    incrementIn();
-    encrypt();
-    incrementOut();
-    writeFile();
-  }
-  incrementIn();
-  encrypt();
-  incrementOut();
-  writeFile();
+  pthread_t t1,t2,t3,t4,t5,t6;
 
-  closeFiles();
+  pthread_create(&t5, NULL, writeFile, NULL);
+  pthread_create(&t4, NULL, incrementOut, NULL);
+  pthread_create(&t3, NULL, encrypt, NULL);
+  pthread_create(&t2, NULL, incrementIn, NULL);
+  pthread_create(&t1, NULL, readFile, NULL);
+
+  pthread_join(t1, NULL);
+  pthread_join(t2, NULL);
+  pthread_join(t3, NULL);
+  pthread_join(t4, NULL);
+  pthread_join(t5, NULL);
+
+  destroy();
 
   printCounters();
 

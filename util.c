@@ -4,8 +4,7 @@
 
 #include "util.h"
 
-
-int initFiles(char* infileName, char* outfileName){
+int init(char* infileName, char* outfileName){
 
   infile = fopen(infileName, "r");
   if (infile == NULL){
@@ -21,49 +20,89 @@ int initFiles(char* infileName, char* outfileName){
     return 0;
   }
 
-  buffer = calloc(buffSize, sizeof(char));
+  inbuffer = calloc(buffSize, sizeof(char));
+  outbuffer = calloc(buffSize, sizeof(char));
   incounter = initCounter();
   outcounter = initCounter();
 
-
+  advance = 1;
   selection = 1;
+
+  sem_init(&s1, 0, 0);
+  sem_init(&s2, 0, 0);
+  sem_init(&s3, 0, 0);
+  sem_init(&s4, 0, 0);
+  sem_init(&s5, 0, 0);
+
+  pthread_mutex_init(&mut, NULL);
 
   return 1;
 }
 
-void closeFiles(){
+void destroy(){
+  sem_destroy(&s1);
+  sem_destroy(&s2);
+  sem_destroy(&s3);
+  sem_destroy(&s4);
+  sem_destroy(&s5);
+
+  pthread_mutex_destroy(&mut);
+
   fclose(infile);
   fclose(outfile);
-  free(buffer);
+  free(inbuffer);
+  free(outbuffer);
 }
 
-int readFile()
-{
-    int advance = 1;
+void* readFile(){
+
     int c;
-    int index = 0;
 
-    while (index < buffSize && (c = fgetc(infile)) != EOF) {
-      buffer[index++] = c;
+    while (advance) {
+      pthread_mutex_lock(&mut);
+
+      int index = 0;
+      while (index < buffSize && (c = fgetc(infile)) != EOF) {
+        inbuffer[index++] = c;
+      }
+
+      inbuffer[index] = '\0';
+
+      if(c == EOF) advance = 0;
+
+      pthread_mutex_unlock(&mut);
+
+      sem_post(&s2);
+      sem_wait(&s1);
     }
 
-    buffer[index] = '\0';
-
-    if(c == EOF) advance = 0;
-
-    return advance;
+    return NULL;
 }
 
-int writeFile()
-{
-    int index = 0;
+void* writeFile(){
 
-    while (buffer[index])
-    {
-      fputc(buffer[index++], outfile);
+    while (advance) {
+      sem_wait(&s5);
+
+      pthread_mutex_lock(&mut);
+
+      int index = 0;
+
+      while (outbuffer[index])
+      {
+        fputc(outbuffer[index++], outfile);
+      }
+      /*
+      for (int i = 0; i < buffSize; i++) {
+        outbuffer[i] = '\0';
+      }
+      */
+      pthread_mutex_unlock(&mut);
+
+      sem_post(&s1);
     }
 
-    return 1;
+    return NULL;
 }
 
 int* initCounter(){
@@ -74,18 +113,40 @@ int* initCounter(){
     return counter;
 }
 
-int incrementIn(){
-  for (int i = 0; buffer[i]; i++)
-    increment(buffer[i], incounter);
+void* incrementIn(){
 
-  return 1;
+    while (advance) {
+      sem_wait(&s2);
+
+      pthread_mutex_lock(&mut);
+
+      for (int i = 0; inbuffer[i]; i++){
+        increment(inbuffer[i], incounter);
+      }
+
+      pthread_mutex_unlock(&mut);
+
+      sem_post(&s3);
+    }
+  return NULL;
 }
 
-int incrementOut(){
-  for (int i = 0; buffer[i]; i++)
-    increment(buffer[i], outcounter);
+void* incrementOut(){
 
-  return 1;
+  while (advance) {
+    sem_wait(&s4);
+
+    pthread_mutex_lock(&mut);
+
+    for (int i = 0; outbuffer[i]; i++){
+      increment(outbuffer[i], outcounter);
+    }
+
+    pthread_mutex_unlock(&mut);
+
+    sem_post(&s5);
+  }
+  return NULL;
 }
 
 int increment(char c, int* counter){
@@ -175,13 +236,28 @@ char getLeter(int i){
   return '\0';
 }
 
-int encrypt(){
+void* encrypt(){
 
-  for (int i = 0; '\0' != buffer[i]; i++) {
-    buffer[i] = encryptChar(buffer[i], &selection);
+  while (advance) {
+    sem_wait(&s3);
+
+    pthread_mutex_lock(&mut);
+
+    for (int i = 0; inbuffer[i]; i++) {
+      outbuffer[i] = encryptChar(inbuffer[i], &selection);
+    }
+
+    /*
+    for (int i = 0; inbuffer[i]; i++) {
+      inbuffer[i] = '\0';
+    }
+    */
+    pthread_mutex_unlock(&mut);
+
+    sem_post(&s4);
   }
 
-  return 1;
+  return NULL;
 }
 
 char encryptChar(char c, int* s){
