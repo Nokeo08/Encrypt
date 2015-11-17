@@ -5,11 +5,11 @@
 #ifndef _UTIL_PROJ2_H_
 #define _UTIL_PROJ2_H_
 
+int inProdPtr, inConPtr, inConPtrE, outConPtr, outConPtrW, first;
 
-int s1, s2, s3, s4, s5, s6;
+sem_t inEmptyCounter, inEmptyEncrypter, inFullCounter, inFullEncrypter;
+sem_t outEmptyCounter, outEmptyWriter, outFullCounter, outFullWriter;
 
-/*(sem_t s1, s2, s3, s4, s5, s6;
-*/
 pthread_mutex_t mut;
 
 FILE* infile;
@@ -20,7 +20,6 @@ char* inbuffer;
 char* outbuffer;
 int* incounter;
 int* outcounter;
-int advance;
 
 
 int init(char* infileName, char* outfileName);
