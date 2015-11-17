@@ -6,8 +6,10 @@
 #define _UTIL_PROJ2_H_
 
 
-sem_t s1, s2, s3, s4, s5, s6;
+int s1, s2, s3, s4, s5, s6;
 
+/*(sem_t s1, s2, s3, s4, s5, s6;
+*/
 pthread_mutex_t mut;
 
 FILE* infile;

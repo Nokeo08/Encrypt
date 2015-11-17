@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  pthread_t t1,t2,t3,t4,t5,t6;
+  pthread_t t1,t2,t3,t4,t5;
 
   pthread_create(&t5, NULL, writeFile, NULL);
   pthread_create(&t4, NULL, incrementOut, NULL);

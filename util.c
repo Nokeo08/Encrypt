@@ -27,25 +27,31 @@ int init(char* infileName, char* outfileName){
 
   advance = 1;
   selection = 1;
-
+  s1=0;
+  s2=0;
+  s3=0;
+  s4=0;
+  s5=0;
+/*
   sem_init(&s1, 0, 0);
   sem_init(&s2, 0, 0);
   sem_init(&s3, 0, 0);
   sem_init(&s4, 0, 0);
   sem_init(&s5, 0, 0);
-
+*/
   pthread_mutex_init(&mut, NULL);
 
   return 1;
 }
 
 void destroy(){
+  /*
   sem_destroy(&s1);
   sem_destroy(&s2);
   sem_destroy(&s3);
   sem_destroy(&s4);
   sem_destroy(&s5);
-
+*/
   pthread_mutex_destroy(&mut);
 
   fclose(infile);
@@ -71,9 +77,11 @@ void* readFile(){
       if(c == EOF) advance = 0;
 
       pthread_mutex_unlock(&mut);
-
-      sem_post(&s2);
-      sem_wait(&s1);
+      s2=1;
+      s1=0;
+      while(!s1){}
+      /*sem_post(&s2);
+      sem_wait(&s1);*/
     }
 
     return NULL;
@@ -82,7 +90,9 @@ void* readFile(){
 void* writeFile(){
 
     while (advance) {
-      sem_wait(&s5);
+      /*sem_wait(&s5);*/
+
+      while (!s5) { }
 
       pthread_mutex_lock(&mut);
 
@@ -91,15 +101,14 @@ void* writeFile(){
       while (outbuffer[index])
       {
         fputc(outbuffer[index++], outfile);
+        outbuffer[index-1] = '\0';
       }
-      /*
-      for (int i = 0; i < buffSize; i++) {
-        outbuffer[i] = '\0';
-      }
-      */
       pthread_mutex_unlock(&mut);
 
-      sem_post(&s1);
+      s1=1;
+      s5=0;
+
+      /*sem_post(&s1);*/
     }
 
     return NULL;
@@ -116,7 +125,9 @@ int* initCounter(){
 void* incrementIn(){
 
     while (advance) {
-      sem_wait(&s2);
+    /*  sem_wait(&s2); */
+
+    while (!s2) {}
 
       pthread_mutex_lock(&mut);
 
@@ -126,7 +137,10 @@ void* incrementIn(){
 
       pthread_mutex_unlock(&mut);
 
-      sem_post(&s3);
+    /*  sem_post(&s3);*/
+
+      s3=1;
+      s2=0;
     }
   return NULL;
 }
@@ -134,7 +148,9 @@ void* incrementIn(){
 void* incrementOut(){
 
   while (advance) {
-    sem_wait(&s4);
+    /*sem_wait(&s4);*/
+
+    while (!s4) {}
 
     pthread_mutex_lock(&mut);
 
@@ -144,7 +160,10 @@ void* incrementOut(){
 
     pthread_mutex_unlock(&mut);
 
-    sem_post(&s5);
+    s5=1;
+    s4=0;
+
+    /*sem_post(&s5);*/
   }
   return NULL;
 }
@@ -239,22 +258,23 @@ char getLeter(int i){
 void* encrypt(){
 
   while (advance) {
-    sem_wait(&s3);
+    /*sem_wait(&s3);*/
+
+    while (!s3) {}
 
     pthread_mutex_lock(&mut);
 
     for (int i = 0; inbuffer[i]; i++) {
       outbuffer[i] = encryptChar(inbuffer[i], &selection);
-    }
-
-    /*
-    for (int i = 0; inbuffer[i]; i++) {
       inbuffer[i] = '\0';
     }
-    */
+
     pthread_mutex_unlock(&mut);
 
-    sem_post(&s4);
+    s4=1;
+    s3=0;
+
+    /*sem_post(&s4);*/
   }
 
   return NULL;
