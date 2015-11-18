@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
   printf("Enter buffer size: ");
   scanf("%d", &buffSize);
 
+  /* Setup */
   if (!init(argv[1], argv[2])) {
     return 0;
   }
@@ -30,6 +31,7 @@ int main(int argc, char *argv[])
   pthread_join(t4, NULL);
   pthread_join(t5, NULL);
 
+  /* Cleanup */
   destroy();
 
   printCounters();

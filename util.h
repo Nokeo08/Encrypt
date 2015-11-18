@@ -5,8 +5,10 @@
 #ifndef _UTIL_PROJ2_H_
 #define _UTIL_PROJ2_H_
 
-int inProdPtr, inConPtr, inConPtrE, outConPtr, outConPtrW, first;
+/* Counters */
+int readerIndex, inCounterIndex, encriptionIndex, outCounterIndex, writerIndex;
 
+/* Semephores */
 sem_t inEmptyCounter, inEmptyEncrypter, inFullCounter, inFullEncrypter;
 sem_t outEmptyCounter, outEmptyWriter, outFullCounter, outFullWriter;
 
@@ -14,30 +16,37 @@ pthread_mutex_t mut;
 
 FILE* infile;
 FILE* outfile;
+
 int buffSize;
 int selection;
+
+/* input and output buffers */
 char* inbuffer;
 char* outbuffer;
+
+/* Counters for the input and output buffers */
 int* incounter;
 int* outcounter;
 
-
+/* Setup and Cleanup */
 int init(char* infileName, char* outfileName);
 void destroy();
 
+/* Threads */
 void* readFile();
+void* incrementIn();
+void* encrypt();
+void* incrementOut();
 void* writeFile();
 
-
-int* initCounter();
-void* incrementIn();
-void* incrementOut();
+/* Counter functions */
 int increment(char c, int* counter);
 void printCounters();
 
-
+/* MISC */
 char getLeter(int i);
-void* encrypt();
+
+/* Encryption */
 char encryptChar(char c, int* s);
 
 #endif

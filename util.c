@@ -1,5 +1,5 @@
 #include <stdio.h> /* FILE, fopen, fgetc */
-#include <stdlib.h> /* malloc */
+#include <stdlib.h> /* calloc */
 #include <ctype.h> /* toupper, isalpha */
 
 #include "util.h"
@@ -12,7 +12,6 @@ int init(char* infileName, char* outfileName){
     return 0;
   }
 
-
   outfile = fopen(outfileName, "w");
   if (outfile == NULL){
     fclose(infile);
@@ -22,19 +21,17 @@ int init(char* infileName, char* outfileName){
 
   inbuffer = calloc(buffSize, sizeof(char));
   outbuffer = calloc(buffSize, sizeof(char));
-  incounter = initCounter();
-  outcounter = initCounter();
 
+  incounter = calloc(26, sizeof(int));
+  outcounter = calloc(26, sizeof(int));
 
   selection = 1;
-  first = 1;
 
-
-  inProdPtr=0;
-  inConPtr=0;
-  inConPtrE=0;
-  outConPtr=0;
-  outConPtrW=0;
+  readerIndex=0;
+  inCounterIndex=0;
+  encriptionIndex=0;
+  outCounterIndex=0;
+  writerIndex=0;
 
 
   sem_init(&inEmptyCounter, 0, buffSize);
@@ -78,18 +75,16 @@ void destroy(){
 }
 
 void* readFile(){
-  int c = 0;
 
-    while (EOF != c) {
+    while (EOF != inbuffer[readerIndex]) {
 
       sem_wait(&inEmptyCounter);
       sem_wait(&inEmptyEncrypter);
 
       pthread_mutex_lock(&mut);
 
-      c = fgetc(infile);
-      inbuffer[inProdPtr] = c;
-      inProdPtr = (inProdPtr+1) % buffSize;
+      inbuffer[readerIndex] = fgetc(infile);
+      readerIndex = (readerIndex+1) % buffSize;
 
       pthread_mutex_unlock(&mut);
 
@@ -100,6 +95,7 @@ void* readFile(){
     return NULL;
 }
 
+/* increments the input buffer */
 void* incrementIn(){
 
     int go = 1;
@@ -108,9 +104,9 @@ void* incrementIn(){
 
       pthread_mutex_lock(&mut);
 
-      if (EOF != inbuffer[inConPtr]) {
-        increment(inbuffer[inConPtr], incounter);
-        inConPtr = (inConPtr+1) % buffSize;
+      if (EOF != inbuffer[inCounterIndex]) {
+        increment(inbuffer[inCounterIndex], incounter);
+        inCounterIndex = (inCounterIndex+1) % buffSize;
       }else{
         go = 0;
       }
@@ -134,12 +130,12 @@ void* encrypt(){
 
     pthread_mutex_lock(&mut);
 
-    if (EOF != inbuffer[inConPtrE]) {
-      outbuffer[inConPtrE] = encryptChar(inbuffer[inConPtrE], &selection);
-      inConPtrE = (inConPtrE+1) % buffSize;
+    if (EOF != inbuffer[encriptionIndex]) {
+      outbuffer[encriptionIndex] = encryptChar(inbuffer[encriptionIndex], &selection);
+      encriptionIndex = (encriptionIndex+1) % buffSize;
     }
     else{
-      outbuffer[inConPtrE] = inbuffer[inConPtrE];
+      outbuffer[encriptionIndex] = inbuffer[encriptionIndex];
       go = 0;
     }
 
@@ -162,9 +158,9 @@ void* incrementOut(){
 
     pthread_mutex_lock(&mut);
 
-    if (EOF != outbuffer[outConPtr]) {
-      increment(outbuffer[outConPtr], outcounter);
-      outConPtr = (outConPtr+1) % buffSize;
+    if (EOF != outbuffer[outCounterIndex]) {
+      increment(outbuffer[outCounterIndex], outcounter);
+      outCounterIndex = (outCounterIndex+1) % buffSize;
     }else{
       go = 0;
     }
@@ -185,10 +181,10 @@ void* writeFile(){
 
       pthread_mutex_lock(&mut);
 
-      if(EOF != outbuffer[outConPtrW])
+      if(EOF != outbuffer[writerIndex])
       {
-        fputc(outbuffer[outConPtrW], outfile);
-        outConPtrW = (outConPtrW+1) % buffSize;
+        fputc(outbuffer[writerIndex], outfile);
+        writerIndex = (writerIndex+1) % buffSize;
       }else{
         go = 0;
       }
@@ -199,14 +195,6 @@ void* writeFile(){
     }
 
     return NULL;
-}
-
-int* initCounter(){
-    int* counter = (int*)malloc( 26*sizeof(int) );
-
-    for(int i = 0; i < 26; i++) counter[i] = 0;
-
-    return counter;
 }
 
 int increment(char c, int* counter){

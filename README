@@ -1,0 +1,15 @@
+Encrypt ReadMe
+
+Source Files
+  main.c
+    Contains main function that reads in and breaks up the commands.
+  util.c
+    Contains functions to
+      read from the input file
+      count the occurrence of each letter in the input file.
+      encrypt each character from the input file.
+      count the occurrence of each letter in the output buffer.
+      write the encrypted characters to an output file.
+      initialize all of the resources needed to perform the task.
+      free all the resources needed to perform the task.
+      print out the counter arrays.
